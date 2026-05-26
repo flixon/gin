@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gin Rummy Pro</title>
+    <style>
+        :root { --bg: #fff; --text: #333; --accent: #007bff; }
+        .dark-mode { --bg: #121212; --text: #f0f0f0; --accent: #375a7f; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; transition: 0.3s; }
+        .card { background: #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        .dark-mode .card { background: #222; }
+        input { padding: 10px; border-radius: 5px; border: 1px solid #ccc; width: 45%; margin-bottom: 5px; }
+        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; background: var(--accent); margin: 5px 0; }
+        .danger { background: #dc3545; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border-bottom: 1px solid #ccc; padding: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <h2>Gin Rummy</h2>
+
+    <details>
+        <summary>⚙️ Inställningar</summary>
+        <div class="card">
+            <input type="text" id="name1" placeholder="Namn 1" oninput="saveSettings()">
+            <input type="text" id="name2" placeholder="Namn 2" oninput="saveSettings()">
+            <br>
+            <label>Vinstpoäng: </label>
+            <input type="number" id="winScore" value="100" oninput="saveSettings()" style="width: 60px;">
+            <br>
+            <button onclick="toggleDarkMode()">Tema</button>
+            <button class="danger" onclick="resetGame()">Nollställ allt</button>
+        </div>
+    </details>
+
+    <div class="card" style="margin-top:15px;">
+        <input type="number" id="score1" placeholder="Poäng P1">
+        <input type="number" id="score2" placeholder="Poäng P2">
+        <button onclick="addRound()" style="width: 100%;">Lägg till runda</button>
+    </div>
+
+    <h3>Total: <span id="t1">0</span> - <span id="t2">0</span></h3>
+
+    <table>
+        <thead><tr><th>Runda</th><th id="lbl1">P1</th><th id="lbl2">P2</th></tr></thead>
+        <tbody id="history"></tbody>
+    </table>
+
+    <script>
+        let rounds = JSON.parse(localStorage.getItem('gr_rounds')) || [];
+        
+        function updateUI() {
+            document.getElementById('name1').value = localStorage.getItem('name1') || 'Spelare 1';
+            document.getElementById('name2').value = localStorage.getItem('name2') || 'Spelare 2';
+            document.getElementById('winScore').value = localStorage.getItem('winScore') || 100;
+            document.getElementById('lbl1').innerText = document.getElementById('name1').value;
+            document.getElementById('lbl2').innerText = document.getElementById('name2').value;
+
+            if(localStorage.getItem('dark') === 'true') document.body.classList.add('dark-mode');
+
+            const history = document.getElementById('history');
+            history.innerHTML = '';
+            let s1 = 0, s2 = 0;
+            rounds.forEach((r, i) => {
+                s1 += r.p1; s2 += r.p2;
+                history.innerHTML += `<tr><td>${i+1}</td><td>${r.p1}</td><td>${r.p2}</td></tr>`;
+            });
+            document.getElementById('t1').innerText = s1;
+            document.getElementById('t2').innerText = s2;
+
+            const target = parseInt(localStorage.getItem('winScore')) || 100;
+            if(s1 >= target || s2 >= target) alert("Spelet är slut!");
+        }
+
+        function addRound() {
+            const p1 = parseInt(document.getElementById('score1').value) || 0;
+            const p2 = parseInt(document.getElementById('score2').value) || 0;
+            rounds.push({p1, p2});
+            localStorage.setItem('gr_rounds', JSON.stringify(rounds));
+            document.getElementById('score1').value = '';
+            document.getElementById('score2').value = '';
+            updateUI();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('name1', document.getElementById('name1').value);
+            localStorage.setItem('name2', document.getElementById('name2').value);
+            localStorage.setItem('winScore', document.getElementById('winScore').value);
+            document.getElementById('lbl1').innerText = document.getElementById('name1').value;
+            document.getElementById('lbl2').innerText = document.getElementById('name2').value;
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('dark', document.body.classList.contains('dark-mode'));
+        }
+
+        function resetGame() {
+            if(confirm("Vill du nollställa allt?")) {
+                rounds = [];
+                localStorage.setItem('gr_rounds', '[]');
+                updateUI();
+            }
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>

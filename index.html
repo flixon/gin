@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Gin Rummy Pro</title>
     <style>
         :root { --bg: #fff; --text: #333; --accent: #007bff; }
@@ -16,11 +18,16 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border-bottom: 1px solid #ccc; padding: 10px; text-align: center; }
         
+        input {
+            box-sizing: border-box;
+        }
+        
         .input-row {
         display: flex;
         gap: 10px;
         height: 60px; /* Höjden på hela raden */
-        margin-bottom: 10px;
+        margin-top: 20px;    /* Marginal på toppen */
+        margin-bottom: 20px;
         }
 
         .input-row input {

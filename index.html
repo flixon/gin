@@ -15,6 +15,27 @@
         .danger { background: #dc3545; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border-bottom: 1px solid #ccc; padding: 10px; text-align: center; }
+        
+        .input-row {
+        display: flex;
+        gap: 10px;
+        height: 60px; /* Höjden på hela raden */
+        margin-bottom: 10px;
+        }
+
+        .input-row input {
+            flex: 1; /* Gör att fälten delar lika på utrymmet */
+            height: 100%; /* Fyller hela höjden av raden */
+            font-size: 18px; /* Större text i fälten */
+            padding: 0 10px;
+        }
+    
+        .input-row button {
+            flex: 0 0 80px; /* Knappen blir fast 80px bred */
+            height: 100%; /* Samma höjd som input-fälten */
+            margin: 0; /* Tar bort marginaler */
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -35,10 +56,10 @@
         </div>
     </details>
 
-    <div class="card" style="margin-top:15px;">
-        <input type="number" pattern="\d*" id="score1" placeholder="Poäng för Spelare 1">
-        <input type="number" pattern="\d*" id="score2" placeholder="Poäng för Spelare 2">
-        <button onclick="addRound()" style="width: 100%;">Lägg till runda</button>
+    <div class="input-row">
+        <input type="number" pattern="\d*" id="score1" placeholder="P1">
+        <input type="number" pattern="\d*" id="score2" placeholder="P2">
+        <button onclick="addRound()">+</button>
     </div>
 
     <h3>Total: <span id="t1">0</span> - <span id="t2">0</span></h3>

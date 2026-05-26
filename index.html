@@ -36,8 +36,8 @@
     </details>
 
     <div class="card" style="margin-top:15px;">
-        <input type="number" id="score1" placeholder="Poäng P1">
-        <input type="number" id="score2" placeholder="Poäng P2">
+        <input type="number" pattern="\d*" id="score1" placeholder="Poäng för Spelare 1">
+        <input type="number" pattern="\d*" id="score2" placeholder="Poäng för Spelare 2">
         <button onclick="addRound()" style="width: 100%;">Lägg till runda</button>
     </div>
 
@@ -72,6 +72,8 @@
 
             const target = parseInt(localStorage.getItem('winScore')) || 100;
             if(s1 >= target || s2 >= target) alert("Spelet är slut!");
+            document.getElementById('score1').placeholder = `Poäng för ${localStorage.getItem('name1') || 'Spelare 1'}`;
+            document.getElementById('score2').placeholder = `Poäng för ${localStorage.getItem('name2') || 'Spelare 2'}`;
         }
 
         function addRound() {
@@ -85,11 +87,20 @@
         }
 
         function saveSettings() {
-            localStorage.setItem('name1', document.getElementById('name1').value);
-            localStorage.setItem('name2', document.getElementById('name2').value);
+            const n1 = document.getElementById('name1').value || 'Spelare 1';
+            const n2 = document.getElementById('name2').value || 'Spelare 2';
+            
+            localStorage.setItem('name1', n1);
+            localStorage.setItem('name2', n2);
             localStorage.setItem('winScore', document.getElementById('winScore').value);
-            document.getElementById('lbl1').innerText = document.getElementById('name1').value;
-            document.getElementById('lbl2').innerText = document.getElementById('name2').value;
+            
+            // Uppdatera etiketter
+            document.getElementById('lbl1').innerText = n1;
+            document.getElementById('lbl2').innerText = n2;
+            
+            // Uppdatera placeholders i poängfälten
+            document.getElementById('score1').placeholder = `Poäng för ${n1}`;
+            document.getElementById('score2').placeholder = `Poäng för ${n2}`;
         }
 
         function toggleDarkMode() {

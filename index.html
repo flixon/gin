@@ -6,25 +6,29 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Gin Rummy Pro</title>
     <style>
-        :root { --bg: #fdfcf0; --text: #444; --accent: #a8d5ba; --pastel-pink: #f9d1d1; --pastel-blue: #d1e8f9; }
+        :root { 
+            --bg: #eef2f5; 
+            --card: #ffffff; 
+            --accent: #b4c6e7; /* Mjuk blågrå */
+            --button: #c4d6b0; /* Mjuk salviagrön */
+            --text: #4a4a4a; 
+        }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; }
-        .card { background: #fff; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .card { background: var(--card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
         
-        /* Layout-rader */
         .row { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; }
-        .row input { flex: 1; height: 50px; font-size: 18px; padding: 10px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; }
-        .row button { flex: 1; height: 50px; border: none; border-radius: 10px; font-weight: bold; background: var(--accent); color: #2d5a40; }
+        .row input { flex: 1; height: 50px; font-size: 18px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        .row button { flex: 1; height: 50px; border: none; border-radius: 10px; font-weight: bold; background: var(--accent); color: #fff; }
         
-        .add-btn { width: 100%; height: 60px; background: #88c9a3; color: white; border: none; border-radius: 12px; font-size: 20px; font-weight: bold; }
+        .add-btn { width: 100%; height: 60px; background: var(--button); color: #fff; border: none; border-radius: 12px; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         
-        /* Kalkylator-stil */
-        .grid-btn { padding: 10px; border: none; border-radius: 12px; background: #f0f0f0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
-        .x-count { font-size: 12px; color: #666; margin-top: 4px; }
+        .grid-btn { padding: 10px; border: none; border-radius: 12px; background: #f9f9f9; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
+        .x-count { font-size: 11px; color: #888; margin-top: 4px; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
         th, td { padding: 12px; text-align: center; border-bottom: 1px solid #f0f0f0; }
-        .winner-cell { background-color: #e8f5e9 !important; font-weight: bold; }
-        .starter-badge { font-size: 10px; background: #eee; padding: 2px 6px; border-radius: 10px; }
+        .winner-cell { background-color: #dcedc8 !important; }
+        .danger { background: #f8d7da; color: #721c24; border: none; padding: 10px; border-radius: 8px; width: 100%; margin-top: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -36,19 +40,16 @@
         <span id="lbl1">P1</span>: <span id="wins1">0</span> | <span id="lbl2">P2</span>: <span id="wins2">0</span>
     </div>
 
-    <!-- Rad 1: Kalkylator -->
     <div class="row">
         <button id="calcBtn1" onclick="openCalc('score1')">Kalkylera P1</button>
         <button id="calcBtn2" onclick="openCalc('score2')">Kalkylera P2</button>
     </div>
 
-    <!-- Rad 2: Input -->
     <div class="row">
         <input type="number" pattern="\d*" id="score1" placeholder="P1">
         <input type="number" pattern="\d*" id="score2" placeholder="P2">
     </div>
 
-    <!-- Rad 3: Lägg till -->
     <button class="add-btn" onclick="addRound()">LÄGG TILL RUNDA</button>
 
     <h3>Total: <span id="t1">0</span> - <span id="t2">0</span></h3>
@@ -58,12 +59,23 @@
         <tbody id="history"></tbody>
     </table>
 
-    <!-- Modal -->
+    <details style="margin: 20px 0;">
+        <summary>Inställningar</summary>
+        <div class="card">
+            <input type="text" id="name1" placeholder="Namn 1" oninput="saveSettings()" style="width:100%; margin-bottom:5px;">
+            <input type="text" id="name2" placeholder="Namn 2" oninput="saveSettings()" style="width:100%; margin-bottom:5px;">
+            <label>Vinstpoäng: </label><input type="number" id="winScore" oninput="saveSettings()">
+            <label>Gin-poäng: </label><input type="number" id="ginScore" oninput="saveSettings()">
+            <button class="danger" onclick="resetStats()">Nollställ statistik</button>
+            <button class="danger" onclick="resetGame()">Nollställ match</button>
+        </div>
+    </details>
+
     <div id="calcModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; padding:10px; box-sizing:border-box;">
         <div class="card" style="margin-top: 50px;">
             <h3 id="modalTitle">Kort</h3>
             <div id="btnGrid" style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
-            <button class="add-btn" style="margin-top: 20px;" onclick="closeCalc(true)">KLAR</button>
+            <button class="add-btn" onclick="closeCalc(true)">KLAR</button>
         </div>
     </div>
 
@@ -74,7 +86,7 @@
 
         function openCalc(inputId) {
             activeInput = inputId; cardCounts = new Array(14).fill(0);
-            document.getElementById('modalTitle').innerText = "Kort för " + document.getElementById(inputId).placeholder;
+            document.getElementById('modalTitle').innerText = "Kort för " + (localStorage.getItem(inputId === 'score1' ? 'name1' : 'name2') || 'Spelare');
             document.getElementById('calcModal').style.display = 'block';
             renderCalcButtons();
         }
@@ -85,7 +97,6 @@
             labels.forEach((label, i) => {
                 let btn = document.createElement('div');
                 btn.className = 'grid-btn';
-                // Här byter vi till x-format istället för cirkel
                 btn.innerHTML = `${label} <div class="x-count">${cardCounts[i] > 0 ? 'x ' + cardCounts[i] : ''}</div>`;
                 btn.onclick = () => { cardCounts[i] = (cardCounts[i] + 1) % (i==13 ? 2 : 3); renderCalcButtons(); };
                 grid.appendChild(btn);
@@ -104,15 +115,32 @@
             document.getElementById('calcModal').style.display = 'none';
         }
 
+        function addRound() {
+            const p1 = parseInt(document.getElementById('score1').value) || 0;
+            const p2 = parseInt(document.getElementById('score2').value) || 0;
+            rounds.push({p1, p2});
+            starter = starter === 0 ? 1 : 0;
+            localStorage.setItem('starter', starter);
+            localStorage.setItem('gr_rounds', JSON.stringify(rounds));
+            document.getElementById('score1').value = '';
+            document.getElementById('score2').value = '';
+            updateUI();
+        }
+
         function updateUI() {
             const n1 = localStorage.getItem('name1') || 'P1', n2 = localStorage.getItem('name2') || 'P2';
-            document.getElementById('lbl1').innerHTML = `${n1} <span class="starter-badge">${starter==0?'Börjar':''}</span>`;
-            document.getElementById('lbl2').innerHTML = `${n2} <span class="starter-badge">${starter==1?'Börjar':''}</span>`;
+            document.getElementById('lbl1').innerHTML = `${n1} ${starter==0?'(Börjar)':''}`;
+            document.getElementById('lbl2').innerHTML = `${n2} ${starter==1?'(Börjar)':''}`;
             document.getElementById('th1').innerText = n1; document.getElementById('th2').innerText = n2;
             document.getElementById('calcBtn1').innerText = "Kalkylator " + n1;
             document.getElementById('calcBtn2').innerText = "Kalkylator " + n2;
+            document.getElementById('name1').value = n1; document.getElementById('name2').value = n2;
+            document.getElementById('winScore').value = localStorage.getItem('winScore') || 100;
+            document.getElementById('ginScore').value = localStorage.getItem('ginScore') || 25;
+            document.getElementById('score1').placeholder = n1; document.getElementById('score2').placeholder = n2;
+            document.getElementById('wins1').innerText = localStorage.getItem('wins1') || 0;
+            document.getElementById('wins2').innerText = localStorage.getItem('wins2') || 0;
             
-            // ... (resten av logiken för att rendera tabell och inputs)
             const history = document.getElementById('history'); history.innerHTML = '';
             let s1 = 0, s2 = 0;
             rounds.forEach((r, i) => {
@@ -122,7 +150,10 @@
             document.getElementById('t1').innerText = s1; document.getElementById('t2').innerText = s2;
         }
 
-        // Lägg till din befintliga addRound, saveSettings osv här...
+        function saveSettings() { localStorage.setItem('name1', document.getElementById('name1').value); localStorage.setItem('name2', document.getElementById('name2').value); localStorage.setItem('winScore', document.getElementById('winScore').value); localStorage.setItem('ginScore', document.getElementById('ginScore').value); updateUI(); }
+        function resetStats() { if(confirm("Nollställ vinster?")) { localStorage.setItem('wins1', 0); localStorage.setItem('wins2', 0); updateUI(); } }
+        function resetGame() { if(confirm("Nollställ match?")) { rounds = []; localStorage.setItem('gr_rounds', '[]'); updateUI(); } }
+
         updateUI();
     </script>
 </body>

@@ -11,12 +11,19 @@
         .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .input-row { display: flex; gap: 8px; height: 60px; margin: 15px 0; }
         .input-row input { flex: 1; min-width: 0; height: 100%; font-size: 18px; padding: 0 10px; border: 2px solid #ddd; border-radius: 8px; }
-        .input-row button { flex: 0 0 65px; height: 100%; font-size: 24px; background: var(--accent); color: white; border: none; border-radius: 8px; }
+        .input-row button { flex: 0 0 65px; height: 100%; font-size: 20px; background: var(--accent); color: white; border: none; border-radius: 8px; }
+        .calc-btn { width: 100%; padding: 10px; margin-top: 5px; background: #6c757d; color: white; border: none; border-radius: 8px; }
         .winner-cell { background-color: var(--success) !important; font-weight: bold; }
         .starter-badge { font-size: 12px; background: #e2e6ea; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--card); border-radius: 10px; overflow: hidden; }
         th, td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
         .danger { background: #ff7675; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; margin-top: 5px; }
+        
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; padding: 10px; box-sizing: border-box; }
+        .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .grid-btn { padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: white; position: relative; }
+        .count-badge { position: absolute; top: 2px; right: 5px; background: red; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -33,10 +40,14 @@
         <input type="number" pattern="\d*" id="score2" placeholder="P2">
         <button onclick="addRound()">+</button>
     </div>
+    
+    <div style="display: flex; gap: 10px;">
+        <button class="calc-btn" onclick="openCalc('score1')">Kalkylator P1</button>
+        <button class="calc-btn" onclick="openCalc('score2')">Kalkylator P2</button>
+    </div>
 
-    <div style="display:flex; justify-content: space-between; align-items: center;">
+    <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 20px;">
         <h3>Total: <span id="t1">0</span> - <span id="t2">0</span></h3>
-        <small id="starterIndicator"></small>
     </div>
 
     <table>
@@ -54,82 +65,102 @@
         </div>
     </details>
 
+    <!-- Modal -->
+    <div id="calcModal" class="modal">
+        <div class="card" style="max-height: 90vh; overflow-y: auto;">
+            <h3 id="modalTitle">Välj kort</h3>
+            <div id="btnGrid" class="btn-grid"></div>
+            <button class="calc-btn" style="background: green;" onclick="addGin()">Gin (+25)</button>
+            <button class="calc-btn" onclick="closeCalc(true)">Klar</button>
+        </div>
+    </div>
+
     <script>
         let rounds = JSON.parse(localStorage.getItem('gr_rounds')) || [];
-        let starter = parseInt(localStorage.getItem('starter')) || 0; // 0 för P1, 1 för P2
+        let starter = parseInt(localStorage.getItem('starter')) || 0;
+        let activeInput = '';
+        let cardCounts = new Array(13).fill(0);
 
-        function updateUI() {
-            const n1 = localStorage.getItem('name1') || 'P1';
-            const n2 = localStorage.getItem('name2') || 'P2';
-            
-            // Uppdatera vinst-raden med "Börjar"-badge
-            document.getElementById('lbl1').innerHTML = `${n1} <span class="${starter==0?'starter-badge':''}">${starter==0?'Börjar':''}</span>`;
-            document.getElementById('lbl2').innerHTML = `${n2} <span class="${starter==1?'starter-badge':''}">${starter==1?'Börjar':''}</span>`;
-            
-            // Uppdatera tabellhuvuden
-            document.getElementById('th1').innerText = n1;
-            document.getElementById('th2').innerText = n2;
-            
-            // Uppdatera inställningsfälten
-            document.getElementById('name1').value = n1;
-            document.getElementById('name2').value = n2;
-            
-            // Uppdatera statistik och vinstpoäng
-            document.getElementById('wins1').innerText = localStorage.getItem('wins1') || 0;
-            document.getElementById('wins2').innerText = localStorage.getItem('wins2') || 0;
+        function openCalc(inputId) {
+            activeInput = inputId;
+            cardCounts = new Array(13).fill(0);
+            document.getElementById('modalTitle').innerText = "Kort för " + document.getElementById(inputId).placeholder;
+            document.getElementById('calcModal').style.display = 'block';
+            renderCalcButtons();
+        }
 
-            // HÄR ÄR FIXEN: Uppdatera placeholders för poängfälten
-            document.getElementById('score1').placeholder = n1;
-            document.getElementById('score2').placeholder = n2;
-
-            // Rendera historik
-            const history = document.getElementById('history');
-            history.innerHTML = '';
-            let s1 = 0, s2 = 0;
-            rounds.forEach((r, i) => {
-                s1 += r.p1; s2 += r.p2;
-                let class1 = r.p1 > r.p2 ? 'class="winner-cell"' : '';
-                let class2 = r.p2 > r.p1 ? 'class="winner-cell"' : '';
-                history.innerHTML += `<tr><td>${i+1}</td><td ${class1}>${r.p1}</td><td ${class2}>${r.p2}</td></tr>`;
+        function renderCalcButtons() {
+            const grid = document.getElementById('btnGrid');
+            grid.innerHTML = '';
+            const labels = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+            labels.forEach((label, i) => {
+                let btn = document.createElement('div');
+                btn.className = 'grid-btn';
+                btn.innerHTML = `${label} <div class="count-badge">${cardCounts[i]}</div>`;
+                btn.onclick = () => { cardCounts[i] = (cardCounts[i] + 1) % 3; renderCalcButtons(); };
+                grid.appendChild(btn);
             });
-            document.getElementById('t1').innerText = s1;
-            document.getElementById('t2').innerText = s2;
+        }
+
+        function addGin() {
+            document.getElementById(activeInput).value = 25;
+            closeCalc(false);
+        }
+
+        function closeCalc(calculate) {
+            if (calculate) {
+                let total = cardCounts.reduce((acc, count, i) => {
+                    let val = (i + 1 > 10) ? 10 : (i + 1);
+                    return acc + (count * val);
+                }, 0);
+                document.getElementById(activeInput).value = total;
+            }
+            document.getElementById('calcModal').style.display = 'none';
         }
 
         function addRound() {
             const p1 = parseInt(document.getElementById('score1').value) || 0;
             const p2 = parseInt(document.getElementById('score2').value) || 0;
             rounds.push({p1, p2});
-            
-            // Växla vem som börjar
             starter = starter === 0 ? 1 : 0;
             localStorage.setItem('starter', starter);
-            
             localStorage.setItem('gr_rounds', JSON.stringify(rounds));
+            
             let s1 = rounds.reduce((sum, r) => sum + r.p1, 0);
             let s2 = rounds.reduce((sum, r) => sum + r.p2, 0);
-            
-            if (s1 >= (parseInt(localStorage.getItem('winScore')) || 100) || s2 >= (parseInt(localStorage.getItem('winScore')) || 100)) {
+            let limit = parseInt(localStorage.getItem('winScore')) || 100;
+
+            if (s1 >= limit || s2 >= limit) {
                 if (s1 > s2) localStorage.setItem('wins1', parseInt(localStorage.getItem('wins1') || 0) + 1);
                 else localStorage.setItem('wins2', parseInt(localStorage.getItem('wins2') || 0) + 1);
-                
-                if (confirm("Match slut! Vill du starta nästa?")) {
-                    rounds = [];
-                    localStorage.setItem('gr_rounds', '[]');
-                }
+                if (confirm("Match slut! Vill du starta nästa?")) { rounds = []; localStorage.setItem('gr_rounds', '[]'); }
             }
             document.getElementById('score1').value = '';
             document.getElementById('score2').value = '';
             updateUI();
         }
 
-        // ... dina existerande funktioner saveSettings, resetStats, resetGame ...
-        function saveSettings() {
-            localStorage.setItem('name1', document.getElementById('name1').value);
-            localStorage.setItem('name2', document.getElementById('name2').value);
-            localStorage.setItem('winScore', document.getElementById('winScore').value);
-            updateUI();
+        function updateUI() {
+            const n1 = localStorage.getItem('name1') || 'P1';
+            const n2 = localStorage.getItem('name2') || 'P2';
+            document.getElementById('lbl1').innerHTML = `${n1} <span class="${starter==0?'starter-badge':''}">${starter==0?'Börjar':''}</span>`;
+            document.getElementById('lbl2').innerHTML = `${n2} <span class="${starter==1?'starter-badge':''}">${starter==1?'Börjar':''}</span>`;
+            document.getElementById('th1').innerText = n1; document.getElementById('th2').innerText = n2;
+            document.getElementById('name1').value = n1; document.getElementById('name2').value = n2;
+            document.getElementById('score1').placeholder = n1; document.getElementById('score2').placeholder = n2;
+            document.getElementById('wins1').innerText = localStorage.getItem('wins1') || 0;
+            document.getElementById('wins2').innerText = localStorage.getItem('wins2') || 0;
+
+            const history = document.getElementById('history'); history.innerHTML = '';
+            let s1 = 0, s2 = 0;
+            rounds.forEach((r, i) => {
+                s1 += r.p1; s2 += r.p2;
+                history.innerHTML += `<tr><td>${i+1}</td><td ${r.p1 > r.p2 ? 'class="winner-cell"' : ''}>${r.p1}</td><td ${r.p2 > r.p1 ? 'class="winner-cell"' : ''}>${r.p2}</td></tr>`;
+            });
+            document.getElementById('t1').innerText = s1; document.getElementById('t2').innerText = s2;
         }
+
+        function saveSettings() { localStorage.setItem('name1', document.getElementById('name1').value); localStorage.setItem('name2', document.getElementById('name2').value); updateUI(); }
         function resetStats() { if(confirm("Nollställa vinster?")) { localStorage.setItem('wins1', 0); localStorage.setItem('wins2', 0); updateUI(); } }
         function resetGame() { if(confirm("Nollställa matchen?")) { rounds = []; localStorage.setItem('gr_rounds', '[]'); updateUI(); } }
 

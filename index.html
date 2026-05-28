@@ -13,7 +13,17 @@
             --button: #c4d6b0; /* Mjuk salviagrön */
             --text: #4a4a4a; 
         }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; }
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            padding: 10px; 
+            margin: 0;
+            overflow-x: hidden; /* Förhindrar scroll i sidled */
+            width: 100vw;
+        }
         .card { background: var(--card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
         
         .row { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; }

@@ -62,21 +62,32 @@
             const n1 = localStorage.getItem('name1') || 'P1';
             const n2 = localStorage.getItem('name2') || 'P2';
             
+            // Uppdatera vinst-raden med "Börjar"-badge
             document.getElementById('lbl1').innerHTML = `${n1} <span class="${starter==0?'starter-badge':''}">${starter==0?'Börjar':''}</span>`;
             document.getElementById('lbl2').innerHTML = `${n2} <span class="${starter==1?'starter-badge':''}">${starter==1?'Börjar':''}</span>`;
+            
+            // Uppdatera tabellhuvuden
             document.getElementById('th1').innerText = n1;
             document.getElementById('th2').innerText = n2;
+            
+            // Uppdatera inställningsfälten
             document.getElementById('name1').value = n1;
             document.getElementById('name2').value = n2;
+            
+            // Uppdatera statistik och vinstpoäng
             document.getElementById('wins1').innerText = localStorage.getItem('wins1') || 0;
             document.getElementById('wins2').innerText = localStorage.getItem('wins2') || 0;
 
+            // HÄR ÄR FIXEN: Uppdatera placeholders för poängfälten
+            document.getElementById('score1').placeholder = n1;
+            document.getElementById('score2').placeholder = n2;
+
+            // Rendera historik
             const history = document.getElementById('history');
             history.innerHTML = '';
             let s1 = 0, s2 = 0;
             rounds.forEach((r, i) => {
                 s1 += r.p1; s2 += r.p2;
-                // Logik för att markera vinnare i rundan
                 let class1 = r.p1 > r.p2 ? 'class="winner-cell"' : '';
                 let class2 = r.p2 > r.p1 ? 'class="winner-cell"' : '';
                 history.innerHTML += `<tr><td>${i+1}</td><td ${class1}>${r.p1}</td><td ${class2}>${r.p2}</td></tr>`;

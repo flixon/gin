@@ -6,41 +6,27 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Gin Rummy Pro</title>
     <style>
-        :root { --bg: #fff; --text: #333; --accent: #007bff; }
-        .dark-mode { --bg: #121212; --text: #f0f0f0; --accent: #375a7f; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; transition: 0.3s; overflow-x: hidden; }
-        .card { background: #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
-        .dark-mode .card { background: #222; }
-        
-        .input-row { display: flex; gap: 6px; height: 60px; margin: 20px 0; width: 100%; box-sizing: border-box; }
-        .input-row input { flex: 1; min-width: 0; height: 100%; font-size: 16px; padding: 0 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
-        .input-row button { flex: 0 0 60px; height: 100%; font-size: 20px; font-weight: bold; background: var(--accent); color: white; border: none; border-radius: 5px; }
-        
-        .danger { background: #dc3545 !important; margin-top: 10px; width: 100%; padding: 10px; border: none; border-radius: 5px; color: white; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border-bottom: 1px solid #ccc; padding: 10px; text-align: center; }
+        :root { --bg: #f8f9fa; --card: #ffffff; --text: #333; --accent: #4a90e2; --success: #d4edda; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .input-row { display: flex; gap: 8px; height: 60px; margin: 15px 0; }
+        .input-row input { flex: 1; min-width: 0; height: 100%; font-size: 18px; padding: 0 10px; border: 2px solid #ddd; border-radius: 8px; }
+        .input-row button { flex: 0 0 65px; height: 100%; font-size: 24px; background: var(--accent); color: white; border: none; border-radius: 8px; }
+        .winner-cell { background-color: var(--success) !important; font-weight: bold; }
+        .starter-badge { font-size: 12px; background: #e2e6ea; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--card); border-radius: 10px; overflow: hidden; }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
+        .danger { background: #ff7675; color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <h2>Gin Rummy</h2>
     
-    <div class="card" style="text-align: center; font-weight: bold;">
-        Vinster: <span id="lbl1">P1</span>: <span id="wins1">0</span> | <span id="lbl2">P2</span>: <span id="wins2">0</span>
+    <div class="card" style="text-align: center;">
+        <strong>Matchvinster:</strong><br>
+        <span id="lbl1">P1</span>: <span id="wins1">0</span> | <span id="lbl2">P2</span>: <span id="wins2">0</span>
     </div>
-
-    <details>
-        <summary>⚙️ Inställningar</summary>
-        <div class="card">
-            <input type="text" id="name1" placeholder="Namn 1" oninput="saveSettings()" style="width:40%; padding:8px;">
-            <input type="text" id="name2" placeholder="Namn 2" oninput="saveSettings()" style="width:40%; padding:8px;">
-            <br>
-            <label>Vinstpoäng: </label>
-            <input type="number" id="winScore" value="100" oninput="saveSettings()" style="width: 50px; padding:8px;">
-            <button class="danger" onclick="resetStats()">Nollställ statistik</button>
-            <button class="danger" onclick="resetGame()">Nollställ match</button>
-        </div>
-    </details>
 
     <div class="input-row">
         <input type="number" pattern="\d*" id="score1" placeholder="P1">
@@ -48,39 +34,52 @@
         <button onclick="addRound()">+</button>
     </div>
 
-    <h3>Total: <span id="t1">0</span> - <span id="t2">0</span></h3>
+    <div style="display:flex; justify-content: space-between; align-items: center;">
+        <h3>Total: <span id="t1">0</span> - <span id="t2">0</span></h3>
+        <small id="starterIndicator"></small>
+    </div>
 
     <table>
         <thead><tr><th>Runda</th><th id="th1">P1</th><th id="th2">P2</th></tr></thead>
         <tbody id="history"></tbody>
     </table>
 
+    <details style="margin-top:20px;">
+        <summary>Inställningar</summary>
+        <div class="card">
+            <input type="text" id="name1" placeholder="Namn 1" oninput="saveSettings()" style="width:40%">
+            <input type="text" id="name2" placeholder="Namn 2" oninput="saveSettings()" style="width:40%">
+            <button class="danger" onclick="resetStats()">Nollställ statistik</button>
+            <button class="danger" onclick="resetGame()">Nollställ match</button>
+        </div>
+    </details>
+
     <script>
         let rounds = JSON.parse(localStorage.getItem('gr_rounds')) || [];
+        let starter = parseInt(localStorage.getItem('starter')) || 0; // 0 för P1, 1 för P2
 
         function updateUI() {
             const n1 = localStorage.getItem('name1') || 'P1';
             const n2 = localStorage.getItem('name2') || 'P2';
             
-            document.getElementById('lbl1').innerText = n1;
-            document.getElementById('lbl2').innerText = n2;
+            document.getElementById('lbl1').innerHTML = `${n1} <span class="${starter==0?'starter-badge':''}">${starter==0?'Börjar':''}</span>`;
+            document.getElementById('lbl2').innerHTML = `${n2} <span class="${starter==1?'starter-badge':''}">${starter==1?'Börjar':''}</span>`;
             document.getElementById('th1').innerText = n1;
             document.getElementById('th2').innerText = n2;
             document.getElementById('name1').value = n1;
             document.getElementById('name2').value = n2;
-            document.getElementById('winScore').value = localStorage.getItem('winScore') || 100;
             document.getElementById('wins1').innerText = localStorage.getItem('wins1') || 0;
             document.getElementById('wins2').innerText = localStorage.getItem('wins2') || 0;
-
-            document.getElementById('score1').placeholder = n1;
-            document.getElementById('score2').placeholder = n2;
 
             const history = document.getElementById('history');
             history.innerHTML = '';
             let s1 = 0, s2 = 0;
             rounds.forEach((r, i) => {
                 s1 += r.p1; s2 += r.p2;
-                history.innerHTML += `<tr><td>${i+1}</td><td>${r.p1}</td><td>${r.p2}</td></tr>`;
+                // Logik för att markera vinnare i rundan
+                let class1 = r.p1 > r.p2 ? 'class="winner-cell"' : '';
+                let class2 = r.p2 > r.p1 ? 'class="winner-cell"' : '';
+                history.innerHTML += `<tr><td>${i+1}</td><td ${class1}>${r.p1}</td><td ${class2}>${r.p2}</td></tr>`;
             });
             document.getElementById('t1').innerText = s1;
             document.getElementById('t2').innerText = s2;
@@ -90,13 +89,16 @@
             const p1 = parseInt(document.getElementById('score1').value) || 0;
             const p2 = parseInt(document.getElementById('score2').value) || 0;
             rounds.push({p1, p2});
-            localStorage.setItem('gr_rounds', JSON.stringify(rounds));
             
+            // Växla vem som börjar
+            starter = starter === 0 ? 1 : 0;
+            localStorage.setItem('starter', starter);
+            
+            localStorage.setItem('gr_rounds', JSON.stringify(rounds));
             let s1 = rounds.reduce((sum, r) => sum + r.p1, 0);
             let s2 = rounds.reduce((sum, r) => sum + r.p2, 0);
-            const target = parseInt(localStorage.getItem('winScore')) || 100;
-
-            if (s1 >= target || s2 >= target) {
+            
+            if (s1 >= (parseInt(localStorage.getItem('winScore')) || 100) || s2 >= (parseInt(localStorage.getItem('winScore')) || 100)) {
                 if (s1 > s2) localStorage.setItem('wins1', parseInt(localStorage.getItem('wins1') || 0) + 1);
                 else localStorage.setItem('wins2', parseInt(localStorage.getItem('wins2') || 0) + 1);
                 
@@ -110,28 +112,15 @@
             updateUI();
         }
 
+        // ... dina existerande funktioner saveSettings, resetStats, resetGame ...
         function saveSettings() {
             localStorage.setItem('name1', document.getElementById('name1').value);
             localStorage.setItem('name2', document.getElementById('name2').value);
             localStorage.setItem('winScore', document.getElementById('winScore').value);
             updateUI();
         }
-
-        function resetStats() {
-            if (confirm("Nollställa vinster?")) {
-                localStorage.setItem('wins1', '0');
-                localStorage.setItem('wins2', '0');
-                updateUI();
-            }
-        }
-
-        function resetGame() {
-            if (confirm("Nollställa pågående match?")) {
-                rounds = [];
-                localStorage.setItem('gr_rounds', '[]');
-                updateUI();
-            }
-        }
+        function resetStats() { if(confirm("Nollställa vinster?")) { localStorage.setItem('wins1', 0); localStorage.setItem('wins2', 0); updateUI(); } }
+        function resetGame() { if(confirm("Nollställa matchen?")) { rounds = []; localStorage.setItem('gr_rounds', '[]'); updateUI(); } }
 
         updateUI();
     </script>
